@@ -1,0 +1,59 @@
+
+name: FIX ALL - Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Check project
+        run: |
+          echo "Checking files..."
+          ls -la
+          test -f settings.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+
+      - name: Check Android module
+        run: |
+          gradle projects --no-daemon
+          gradle :app:tasks --all --no-daemon
+
+      - name: Build APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIOverlayAssistant-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
